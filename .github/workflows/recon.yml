@@ -1,0 +1,108 @@
+name: 🔥 Bug Bounty AutoRecon
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      domain:
+        description: "🎯 Target domain (ej: ejemplo.com)"
+        required: true
+        type: string
+      scan_type:
+        description: "Tipo de escaneo"
+        required: true
+        default: "full"
+        type: choice
+        options:
+          - full
+          - quick
+          - ports-only
+
+jobs:
+  recon:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: 🛠️ Instalando herramientas
+      run: |
+        sudo apt update
+        sudo apt install -y nmap chromium
+        go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
+        go install -v github.com/tomnomnom/assetfinder@latest
+        go install -v github.com/OWASP/Amass/v4/...@master
+        go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest
+        go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
+        go install -v github.com/sensepost/gowitness@latest
+        echo "$HOME/go/bin" >> $GITHUB_PATH
+    
+    - name: 🔍 Fase 1 - Subdomain Discovery
+      run: |
+        echo "📡 Buscando subdominios para ${{ inputs.domain }}"
+        subfinder -d ${{ inputs.domain }} -silent | sort -u > subdomains.txt
+        assetfinder --subs-only ${{ inputs.domain }} >> subdomains.txt
+        amass enum -passive -d ${{ inputs.domain }} -o amass.txt
+        cat amass.txt >> subdomains.txt
+        cat subdomains.txt | sort -u > all_subs.txt
+        echo "✅ Encontrados $(wc -l all_subs.txt) subdominios"
+    
+    - name: 🏓 Fase 2 - HTTP Probe
+      run: |
+        cat all_subs.txt | httpx -threads 150 \
+          -status-code \
+          -title \
+          -tech-detect \
+          -follow-redirects \
+          -o alive.txt
+        echo "✅ Hosts vivos: $(wc -l alive.txt)"
+    
+    - name: 🔬 Fase 3 - Escaneo de Puertos (Nmap)
+      run: |
+        cat alive.txt | awk -F[/:] '{print $1}' | sort -u > ips.txt
+        nmap -iL ips.txt --top-ports 100 -sV --open -oA nmap_scan -T4 --min-rate 1000 || true
+    
+    - name: 💥 Fase 4 - Nuclei Vulnerabilities
+      run: |
+        nuclei -l alive.txt -severity critical,high,medium -stats -o nuclei_results.txt || true
+    
+    - name: 📸 Fase 5 - Screenshots
+      run: |
+        mkdir -p screenshots
+        gowitness file -f alive.txt --destination screenshots/ || true
+        zip -r screenshots.zip screenshots/ || true
+    
+    - name: 📊 Generando Reporte
+      run: |
+        cat > REPORT.md << EOF
+        # 🔥 Recon Report para ${{ inputs.domain }}
+        
+        **Fecha:** $(date)
+        **Modo:** ${{ inputs.scan_type }}
+        
+        ## 📈 Estadísticas
+        - Subdominios encontrados: $(wc -l < all_subs.txt)
+        - Hosts vivos: $(wc -l < alive.txt)
+        - Vulnerabilidades encontradas: $(grep -c "" nuclei_results.txt 2>/dev/null || echo 0)
+        
+        ## 🎯 Próximos pasos
+        Revisa los artifacts descargables para más detalles.
+        EOF
+        
+        cat REPORT.md
+    
+    - name: 📦 Subiendo Resultados
+      uses: actions/upload-artifact@v4
+      with:
+        name: recon-results-${{ inputs.domain }}-${{ github.run_id }}
+        path: |
+          all_subs.txt
+          alive.txt
+          ips.txt
+          nmap_scan.*
+          nuclei_results.txt
+          screenshots.zip
+          REPORT.md
+        retention-days: 7
