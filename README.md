@@ -1,32 +1,39 @@
 # 🔥 recon-automator
 
-[![GitHub Action](https://github.com/Falconmx1/recon-automator/actions/workflows/recon.yml/badge.svg)](https://github.com/Falconmx1/recon-automator/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub Actions](https://github.com/Falconmx1/recon-automator/actions/workflows/recon.yml/badge.svg)](https://github.com/Falconmx1/recon-automator/actions)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-## 🎯 Automated Bug Bounty Reconnaissance
+## 🎯 Bug Bounty Recon Automator
 
-**recon-automator** is a powerful, CI/CD-ready reconnaissance framework for Bug Bounty hunters. It automates the entire recon pipeline with GitHub Actions.
+Herramienta automatizada de reconocimiento para Bug Bounty con GitHub Actions.
 
-### ✨ Features
+### ⚡ Características
 
-- 🔍 **Subdomain Discovery** - Subfinder, Assetfinder, Amass
-- 🏓 **HTTP Probing** - httpx with tech detection
-- 🔬 **Port Scanning** - Nmap with service detection
-- 💥 **Vulnerability Scanning** - Nuclei with 4000+ templates
-- 📸 **Screenshots** - gowitness for visual inspection
-- 📢 **Notifications** - Discord/Slack/Telegram integration
-- 📦 **Artifacts** - Automatic result storage
+- 🔍 **Subdomain Discovery** (Subfinder + Assetfinder + Amass)
+- 🏓 **HTTP Probing** (httpx con detección de tecnologías)
+- 🔬 **Port Scanning** (Nmap top 100 puertos)
+- 💥 **Vulnerability Scan** (Nuclei 4000+ templates)
+- 📸 **Screenshots** (gowitness)
+- 📊 **Reportes automáticos**
+- 📦 **Artifacts descargables**
 
-### 🚀 Quick Start
+### 🚀 Cómo usarlo
 
-1. Fork this repository
-2. Add your target domain in GitHub Actions → Run workflow
-3. Get results in the Actions artifacts
+1. Ve a la pestaña **Actions**
+2. Selecciona **"🔥 Bug Bounty AutoRecon"**
+3. Haz clic en **"Run workflow"**
+4. Ingresa el dominio objetivo (ej: `ejemplo.com`)
+5. Espera los resultados (5-15 minutos)
 
-### 📋 Manual Usage
+### 📥 Resultados
 
-```bash
-git clone https://github.com/Falconmx1/recon-automator
-cd recon-automator
-make install
-make recon DOMAIN=example.com
+Después del scan, descarga el artifact:
+- `all_subs.txt` - Todos los subdominios
+- `alive.txt` - Hosts con HTTP/HTTPS activo
+- `nmap_scan.xml` - Puertos abiertos
+- `nuclei_results.txt` - Vulnerabilidades encontradas
+- `screenshots.zip` - Capturas de pantalla
+
+### 🔧 Configuración avanzada
+
+Para notificaciones a Discord, añade en **Settings → Secrets**:
